@@ -1,0 +1,30 @@
+# Build outputs
+build/*
+!build/.gitkeep
+
+# ISO staging and generated images
+iso/*
+!iso/.gitkeep
+*.iso
+
+# Compiled binaries and objects
+*.o
+*.elf
+*.bin
+*.img
+*.map
+
+# Debug files
+*.log
+core
+core.*
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating system files
+.DS_Store
+Thumbs.db
