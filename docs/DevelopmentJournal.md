@@ -11,7 +11,7 @@
 - Installed and tested QEMU
 - Compiled a freestanding x86_64 C object
 - Assembled an x86_64 NASM object
-- Created the initial NovaOS project structure
+- Created the initial TASOS project structure
 
 ### Environment
 
