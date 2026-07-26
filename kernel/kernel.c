@@ -1,3 +1,4 @@
+#include <tasos/gdt.h>
 #include <tasos/terminal.h>
 
 void kernel_main(void)
@@ -9,22 +10,7 @@ void kernel_main(void)
         TERMINAL_COLOR_BLACK
     );
 
-    terminal_write_line("TASOS v0.1.0");
-
-    terminal_set_color(
-        TERMINAL_COLOR_LIGHT_GREEN,
-        TERMINAL_COLOR_BLACK
-    );
-
-    terminal_write_line("Kernel initialized successfully.");
-
-    terminal_set_color(
-        TERMINAL_COLOR_WHITE,
-        TERMINAL_COLOR_BLACK
-    );
-
-    terminal_write_line("Welcome, Avinash.");
-    terminal_write_line("");
+    terminal_write_line("TASOS v0.2.0");
 
     terminal_set_color(
         TERMINAL_COLOR_LIGHT_GREY,
@@ -32,18 +18,24 @@ void kernel_main(void)
     );
 
     terminal_write_line("Terminal driver initialized.");
-    terminal_write_line("Testing screen scrolling...");
 
-    for (int line = 1; line <= 30; line++) {
-        terminal_write("Terminal test line ");
-        terminal_put_character(
-            (char)('0' + ((line / 10) % 10))
-        );
-        terminal_put_character(
-            (char)('0' + (line % 10))
-        );
-        terminal_write_line("");
-    }
+    gdt_initialize();
+
+    terminal_set_color(
+        TERMINAL_COLOR_LIGHT_GREEN,
+        TERMINAL_COLOR_BLACK
+    );
+
+    terminal_write_line("GDT initialized successfully");
+
+    terminal_set_color(
+        TERMINAL_COLOR_WHITE,
+        TERMINAL_COLOR_BLACK
+    );
+
+    terminal_write_line("Kernel code segment: 0x08");
+    terminal_write_line("Kernel data segment: 0x10");
+    terminal_write_line("TASOS now owns its processor segmentation.");
 
     for (;;) {
         __asm__ volatile ("hlt");
