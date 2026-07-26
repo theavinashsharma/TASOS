@@ -1,23 +1,89 @@
-.PHONY: help verify clean
+CC := gcc
+AS := nasm
+LD := ld
 
-help:
-	@echo "TASOS build system"
-	@echo ""
-	@echo "Available targets:"
-	@echo "  make verify  - Verify required development tools"
-	@echo "  make clean   - Remove generated build files"
+BUILD_DIR := build
+ISO_DIR := iso
 
-verify:
-	@command -v gcc >/dev/null || { echo "Missing gcc"; exit 1; }
-	@command -v nasm >/dev/null || { echo "Missing nasm"; exit 1; }
-	@command -v make >/dev/null || { echo "Missing make"; exit 1; }
-	@command -v gdb >/dev/null || { echo "Missing gdb"; exit 1; }
-	@command -v grub-mkrescue >/dev/null || { echo "Missing grub-mkrescue"; exit 1; }
-	@command -v xorriso >/dev/null || { echo "Missing xorriso"; exit 1; }
-	@command -v qemu-system-x86_64 >/dev/null || { echo "Missing qemu-system-x86_64"; exit 1; }
-	@echo "TASOS development environment verified."
+KERNEL := $(BUILD_DIR)/tasos.kernel
+ISO_IMAGE := $(BUILD_DIR)/tasos.iso
+MAP_FILE := $(BUILD_DIR)/tasos.map
+
+CFLAGS := \
+	-m32 \
+	-std=gnu11 \
+	-ffreestanding \
+	-fno-pie \
+	-fno-stack-protector \
+	-Wall \
+	-Wextra \
+	-Werror \
+	-O2 \
+	-Iinclude
+
+ASFLAGS := -f elf32
+
+LDFLAGS := \
+	-m elf_i386 \
+	-T linker.ld \
+	-Map $(MAP_FILE)
+
+OBJECTS := \
+	$(BUILD_DIR)/boot.o \
+	$(BUILD_DIR)/kernel.o \
+	$(BUILD_DIR)/vga_terminal.o
+
+.PHONY: all kernel iso run debug clean validate
+
+all: iso
+
+kernel: $(KERNEL)
+
+iso: $(ISO_IMAGE)
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+$(BUILD_DIR)/boot.o: boot/boot.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/kernel.o: kernel/kernel.c include/tasos/terminal.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/vga_terminal.o: drivers/terminal/vga_terminal.c include/tasos/terminal.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(KERNEL): $(OBJECTS) linker.ld
+	$(LD) $(LDFLAGS) -o $@ $(OBJECTS)
+
+$(ISO_IMAGE): $(KERNEL) $(ISO_DIR)/boot/grub/grub.cfg
+	cp $(KERNEL) $(ISO_DIR)/boot/tasos.kernel
+	grub-mkrescue -o $@ $(ISO_DIR)
+
+run: $(ISO_IMAGE)
+	qemu-system-x86_64 \
+		-cdrom $(ISO_IMAGE) \
+		-m 256M \
+		-no-reboot \
+		-no-shutdown
+
+debug: $(ISO_IMAGE)
+	qemu-system-x86_64 \
+		-cdrom $(ISO_IMAGE) \
+		-m 256M \
+		-no-reboot \
+		-no-shutdown \
+		-s \
+		-S
+
+validate: $(KERNEL) $(ISO_IMAGE)
+	file $(KERNEL)
+	file $(ISO_IMAGE)
+	grub-file --is-x86-multiboot $(KERNEL)
+	@echo "Multiboot validation passed."
+	nm -u $(KERNEL)
 
 clean:
-	@find build -mindepth 1 ! -name .gitkeep -delete
-	@find iso -mindepth 1 ! -name .gitkeep -delete
-	@echo "Build directories cleaned."
+	rm -rf $(BUILD_DIR)
+	rm -f $(ISO_DIR)/boot/tasos.kernel
+	
