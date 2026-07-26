@@ -37,7 +37,12 @@ OBJECTS := \
 	$(BUILD_DIR)/idt.o \
 	$(BUILD_DIR)/idt_load.o \
 	$(BUILD_DIR)/isr.o \
-	$(BUILD_DIR)/interrupt_handler.o
+	$(BUILD_DIR)/interrupt_handler.o \
+	$(BUILD_DIR)/io.o \
+	$(BUILD_DIR)/pic.o \
+	$(BUILD_DIR)/irq.o \
+	$(BUILD_DIR)/irq_handler.o \
+	$(BUILD_DIR)/keyboard.o
 
 .PHONY: all kernel iso run debug clean validate
 
@@ -79,6 +84,34 @@ $(BUILD_DIR)/interrupt_handler.o: \
 	include/tasos/interrupt_frame.h \
 	include/tasos/terminal.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/io.o: kernel/arch/i386/cpu/io.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/pic.o: drivers/interrupt_controller/pic.c \
+	include/tasos/pic.h \
+	include/tasos/io.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/irq.o: kernel/arch/i386/interrupts/irq.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/irq_handler.o: \
+	kernel/arch/i386/interrupts/irq_handler.c \
+	include/tasos/interrupt_frame.h \
+	include/tasos/irq.h \
+	include/tasos/pic.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/keyboard.o: drivers/input/keyboard/keyboard.c \
+	include/tasos/interrupt_frame.h \
+	include/tasos/io.h \
+	include/tasos/irq.h \
+	include/tasos/keyboard.h \
+	include/tasos/terminal.h \
+	include/tasos/pic.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
 $(KERNEL): $(OBJECTS) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS)

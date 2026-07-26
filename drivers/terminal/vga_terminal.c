@@ -109,6 +109,21 @@ void terminal_put_character(char character)
         return;
     }
 
+    if (character == '\b') {
+        if (terminal_column > 0U) {
+            terminal_column--;
+
+            terminal_write_cell(
+                terminal_row,
+                terminal_column,
+                ' ',
+                terminal_color
+            );
+        }
+
+        return;
+    }
+
     terminal_write_cell(
         terminal_row,
         terminal_column,

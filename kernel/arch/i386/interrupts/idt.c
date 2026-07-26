@@ -2,6 +2,8 @@
 #include <stdint.h>
 
 #include <tasos/idt.h>
+#include <tasos/irq.h>
+#include <tasos/pic.h>
 
 #define CPU_EXCEPTION_COUNT 32
 
@@ -11,6 +13,7 @@ static struct idt_pointer idt_descriptor;
 extern void idt_load(const struct idt_pointer* descriptor);
 
 extern void (*isr_stub_table[CPU_EXCEPTION_COUNT])(void);
+extern void (*irq_stub_table[IRQ_COUNT])(void);
 
 static void idt_clear(void)
 {
@@ -44,15 +47,10 @@ void idt_set_gate(
         (uint16_t)((handler >> 16) & 0xFFFFU);
 }
 
-void idt_initialize(void)
+static void idt_install_exception_gates(
+    uint8_t gate_attributes
+)
 {
-    const uint8_t interrupt_gate_attributes =
-        IDT_GATE_PRESENT |
-        IDT_GATE_RING_0 |
-        IDT_GATE_32_BIT_INTERRUPT;
-
-    idt_clear();
-
     for (
         uint8_t vector = 0;
         vector < CPU_EXCEPTION_COUNT;
@@ -62,9 +60,44 @@ void idt_initialize(void)
             vector,
             (uintptr_t)isr_stub_table[vector],
             IDT_KERNEL_CODE_SELECTOR,
-            interrupt_gate_attributes
+            gate_attributes
         );
     }
+}
+
+static void idt_install_irq_gates(
+    uint8_t gate_attributes
+)
+{
+    for (uint8_t irq = 0; irq < IRQ_COUNT; irq++) {
+        const uint8_t vector =
+            (uint8_t)(PIC_MASTER_VECTOR_OFFSET + irq);
+
+        idt_set_gate(
+            vector,
+            (uintptr_t)irq_stub_table[irq],
+            IDT_KERNEL_CODE_SELECTOR,
+            gate_attributes
+        );
+    }
+}
+
+void idt_initialize(void)
+{
+    const uint8_t interrupt_gate_attributes =
+        IDT_GATE_PRESENT |
+        IDT_GATE_RING_0 |
+        IDT_GATE_32_BIT_INTERRUPT;
+
+    idt_clear();
+
+    idt_install_exception_gates(
+        interrupt_gate_attributes
+    );
+
+    idt_install_irq_gates(
+        interrupt_gate_attributes
+    );
 
     idt_descriptor.limit =
         (uint16_t)(sizeof(idt_entries) - 1U);
