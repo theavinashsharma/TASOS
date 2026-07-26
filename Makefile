@@ -33,7 +33,11 @@ OBJECTS := \
 	$(BUILD_DIR)/kernel.o \
 	$(BUILD_DIR)/vga_terminal.o \
 	$(BUILD_DIR)/gdt.o \
-	$(BUILD_DIR)/gdt_flush.o
+	$(BUILD_DIR)/gdt_flush.o \
+	$(BUILD_DIR)/idt.o \
+	$(BUILD_DIR)/idt_load.o \
+	$(BUILD_DIR)/isr.o \
+	$(BUILD_DIR)/interrupt_handler.o
 
 .PHONY: all kernel iso run debug clean validate
 
@@ -60,6 +64,21 @@ $(BUILD_DIR)/gdt.o: kernel/arch/i386/gdt/gdt.c include/tasos/gdt.h | $(BUILD_DIR
 
 $(BUILD_DIR)/gdt_flush.o: kernel/arch/i386/gdt/gdt_flush.asm | $(BUILD_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/idt.o: kernel/arch/i386/interrupts/idt.c include/tasos/idt.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/idt_load.o: kernel/arch/i386/interrupts/idt_load.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/isr.o: kernel/arch/i386/interrupts/isr.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BUILD_DIR)/interrupt_handler.o: \
+	kernel/arch/i386/interrupts/interrupt_handler.c \
+	include/tasos/interrupt_frame.h \
+	include/tasos/terminal.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL): $(OBJECTS) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS)
