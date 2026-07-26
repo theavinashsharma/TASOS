@@ -31,7 +31,9 @@ LDFLAGS := \
 OBJECTS := \
 	$(BUILD_DIR)/boot.o \
 	$(BUILD_DIR)/kernel.o \
-	$(BUILD_DIR)/vga_terminal.o
+	$(BUILD_DIR)/vga_terminal.o \
+	$(BUILD_DIR)/gdt.o \
+	$(BUILD_DIR)/gdt_flush.o
 
 .PHONY: all kernel iso run debug clean validate
 
@@ -47,11 +49,17 @@ $(BUILD_DIR):
 $(BUILD_DIR)/boot.o: boot/boot.asm | $(BUILD_DIR)
 	$(AS) $(ASFLAGS) $< -o $@
 
-$(BUILD_DIR)/kernel.o: kernel/kernel.c include/tasos/terminal.h | $(BUILD_DIR)
+$(BUILD_DIR)/kernel.o: kernel/kernel.c include/tasos/terminal.h include/tasos/gdt.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/vga_terminal.o: drivers/terminal/vga_terminal.c include/tasos/terminal.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/gdt.o: kernel/arch/i386/gdt/gdt.c include/tasos/gdt.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/gdt_flush.o: kernel/arch/i386/gdt/gdt_flush.asm | $(BUILD_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
 
 $(KERNEL): $(OBJECTS) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS)
