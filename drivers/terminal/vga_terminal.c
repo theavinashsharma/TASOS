@@ -154,3 +154,27 @@ void terminal_write_line(const char* text)
     terminal_write(text);
     terminal_put_character('\n');
 }
+
+void terminal_write_unsigned(uint32_t value)
+{
+    char digits[10];
+    size_t digit_count = 0;
+
+    if (value == 0U) {
+        terminal_put_character('0');
+        return;
+    }
+
+    while (value > 0U) {
+        digits[digit_count] =
+            (char)('0' + (value % 10U));
+
+        digit_count++;
+        value /= 10U;
+    }
+
+    while (digit_count > 0U) {
+        digit_count--;
+        terminal_put_character(digits[digit_count]);
+    }
+}
