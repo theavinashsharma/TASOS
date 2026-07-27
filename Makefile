@@ -42,7 +42,8 @@ OBJECTS := \
 	$(BUILD_DIR)/pic.o \
 	$(BUILD_DIR)/irq.o \
 	$(BUILD_DIR)/irq_handler.o \
-	$(BUILD_DIR)/keyboard.o
+	$(BUILD_DIR)/keyboard.o \
+	$(BUILD_DIR)/pit.o
 
 .PHONY: all kernel iso run debug clean validate
 
@@ -112,6 +113,8 @@ $(BUILD_DIR)/keyboard.o: drivers/input/keyboard/keyboard.c \
 	include/tasos/pic.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/pit.o: drivers/timer/pit.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(KERNEL): $(OBJECTS) linker.ld
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS)

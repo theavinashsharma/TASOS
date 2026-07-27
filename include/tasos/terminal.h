@@ -38,4 +38,6 @@ void terminal_write(const char* text);
 
 void terminal_write_line(const char* text);
 
+void terminal_write_unsigned(uint32_t value);
+
 #endif
